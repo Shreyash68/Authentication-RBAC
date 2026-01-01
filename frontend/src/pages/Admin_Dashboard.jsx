@@ -7,8 +7,10 @@ function AdminDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
+  const [showUsersModal, setShowUsersModal] = useState(false)
   const [selectedTask, setSelectedTask] = useState(null)
   const [tasks, setTasks] = useState([])
+  const [users, setUsers] = useState([])
   const navigate = useNavigate()
 
   const [newTask, setNewTask] = useState({
@@ -31,8 +33,11 @@ function AdminDashboard() {
 
         setIsAuthenticated(true)
 
-        const tasksData = await apiRequest("/tasks")
+        const tasksData = await apiRequest("/tasks/")
         setTasks(tasksData)
+
+        const usersData = await apiRequest("/users/")
+        setUsers(usersData)
 
       } catch (error) {
         // 🔥 THIS IS THE IMPORTANT PART
@@ -54,7 +59,7 @@ function AdminDashboard() {
   const handleCreateTask = async () => {
     try {
       // API call to create task - backend sets status to "todo" by default
-      const createdTask = await apiRequest("/tasks", {
+      const createdTask = await apiRequest("/tasks/", {
         method: "POST",
         body: JSON.stringify({
           title: newTask.title,
@@ -203,6 +208,11 @@ function AdminDashboard() {
     return { total, inProgress, done, todo }
   }
 
+  const getUserRole = (email) => {
+    const user = users.find(u => u.email === email)
+    return user ? `(${user.role})` : ''
+  }
+
   const stats = calculateStats()
 
   // Show loading state
@@ -248,7 +258,12 @@ function AdminDashboard() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-8">
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+          <div className="bg-white p-6 rounded-xl shadow-sm cursor-pointer hover:shadow-md transition-shadow" onClick={() => setShowUsersModal(true)}>
+            <div className="text-3xl font-bold text-black">{users.length}</div>
+            <div className="text-sm text-gray-600">Total Users</div>
+            <p className="text-xs text-gray-500">Click to view users</p>
+          </div>
           <div className="bg-white p-6 rounded-xl shadow-sm">
             <div className="text-3xl font-bold text-black">{stats.total}</div>
             <div className="text-sm text-gray-600">Total Tasks</div>
@@ -305,7 +320,9 @@ function AdminDashboard() {
                         <div className="text-sm text-gray-600">{task.description || 'No description'}</div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900">{task.assigned_to || 'Unassigned'}</div>
+                        <div className="text-sm text-gray-900">
+                          {task.assigned_to || 'Unassigned'} <span className="text-gray-500 text-xs">{getUserRole(task.assigned_to)}</span>
+                        </div>
                       </td>
                       <td className="px-6 py-4">
                         <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(task.status)}`}>
@@ -396,14 +413,19 @@ function AdminDashboard() {
 
                 <div>
                   <label className="block text-sm font-semibold mb-2">Assign To Email *</label>
-                  <input
-                    type="email"
+                  <select
                     value={newTask.assigned_to}
                     onChange={(e) => setNewTask({ ...newTask, assigned_to: e.target.value })}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-black focus:outline-none"
-                    placeholder="user@example.com"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-black focus:outline-none bg-white"
                     required
-                  />
+                  >
+                    <option value="">Select User</option>
+                    {users.map(user => (
+                      <option key={user.id} value={user.email}>
+                        {user.email} ({user.role})
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -487,13 +509,19 @@ function AdminDashboard() {
 
               <div>
                 <label className="block text-sm font-semibold mb-2">Assign To Email *</label>
-                <input
-                  type="email"
+                <select
                   value={selectedTask.assigned_to}
                   onChange={(e) => setSelectedTask({ ...selectedTask, assigned_to: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-black focus:outline-none"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-black focus:outline-none bg-white"
                   required
-                />
+                >
+                  <option value="">Select User</option>
+                  {users.map(user => (
+                    <option key={user.id} value={user.email}>
+                      {user.email} ({user.role})
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="pt-4">
@@ -505,6 +533,47 @@ function AdminDashboard() {
                   Update Task
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Users Modal */}
+      {showUsersModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-8 relative max-h-[80vh] overflow-y-auto">
+            <button
+              onClick={() => setShowUsersModal(false)}
+              className="absolute top-4 right-4 text-2xl hover:text-gray-600"
+            >
+              ✕
+            </button>
+
+            <h2 className="text-2xl font-bold mb-6">Registered Users</h2>
+
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Email</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Role</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">User ID</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {users.map((user) => (
+                    <tr key={user.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 text-sm text-gray-900">{user.email}</td>
+                      <td className="px-6 py-4">
+                        <span className={`px-2 py-1 rounded text-xs font-semibold ${user.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
+                          }`}>
+                          {user.role}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-xs text-gray-500 font-mono">{user.id}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

@@ -19,6 +19,17 @@ async def create_task(task: TaskCreate, admin=Depends(get_current_user)):
             detail="Admin cannot assign a task to themselves"
         )
 
+    # 🔐 Business rule: assigned user must exist
+    assigned_user = await db.users.find_one(
+        {"email": task.assigned_to}
+    )
+
+    if not assigned_user:
+        raise HTTPException(
+            status_code=404,
+            detail="Assigned user does not exist"
+        )
+
     # Create task data (status already defaulted by Pydantic)
     data = {
         **task.dict(exclude_none=True),
@@ -63,12 +74,12 @@ async def update_task(
     update: TaskUpdate,
     user=Depends(get_current_user)
 ):
-    # 1️⃣ Find task
+    # 1️ Find task
     task = await db.tasks.find_one({"_id": ObjectId(task_id)})
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
 
-    # 2️⃣ Authorization (admin OR assigned user)
+    # 2️ Authorization (admin OR assigned user)
     if user["role"] != "admin" and task["assigned_to"] != user["email"]:
         raise HTTPException(status_code=403, detail="Not allowed")
 
@@ -77,7 +88,7 @@ async def update_task(
     if not update_data:
         raise HTTPException(status_code=400, detail="No fields to update")
 
-    # 3️⃣ Field-level permission
+    # 3️ Field-level permission
     if user["role"] != "admin":
         # Users can ONLY update status
         if set(update_data.keys()) != {"status"}:
@@ -86,21 +97,40 @@ async def update_task(
                 detail="Users can only update task status"
             )
     else:
-        # 🔐 Admin-specific rule: cannot assign to self
+        # 🔐 Admin-specific rules
         if "assigned_to" in update_data:
+            #  Admin cannot assign to self
             if update_data["assigned_to"] == user["email"]:
                 raise HTTPException(
                     status_code=400,
                     detail="Admin cannot assign a task to themselves"
                 )
 
-    # 4️⃣ Update task
+            #  Assigned user must exist
+            assigned_user = await db.users.find_one(
+                {"email": update_data["assigned_to"]}
+            )
+            if not assigned_user:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Assigned user does not exist"
+                )
+
+            
+            if assigned_user["role"] == "admin":
+                raise HTTPException(
+                    status_code=400,
+                    detail="Tasks cannot be assigned to admins"
+                )
+
+    # 4️ Update task
     await db.tasks.update_one(
         {"_id": ObjectId(task_id)},
         {"$set": update_data}
     )
 
     return {"message": "Task updated successfully"}
+
 
 
 

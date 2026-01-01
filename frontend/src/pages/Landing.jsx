@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { apiRequest } from '../api';
 import { useNavigate } from "react-router-dom"
 
@@ -7,6 +7,7 @@ function Landing() {
   const navigate = useNavigate();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
+  const [user, setUser] = useState(null);
 
   const [loginData, setLoginData] = useState({
     email: '',
@@ -19,6 +20,19 @@ function Landing() {
     role: 'user'
   });
 
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const userData = await apiRequest("/auth/me");
+        setUser(userData);
+      } catch (err) {
+        // Not logged in, that's fine
+        setUser(null);
+      }
+    };
+    checkAuth();
+  }, []);
+
 
   const handleLogin = async () => {
     try {
@@ -28,12 +42,11 @@ function Landing() {
       });
 
       const me = await apiRequest("/auth/me");
-      console.log(me);
+      setUser(me);
+
       if (me.role === "admin") {
-        console.log("admin");
         navigate("/admin");
       } else {
-        console.log("user");
         navigate("/user");
       }
     } catch (err) {
@@ -41,10 +54,29 @@ function Landing() {
     }
   };
 
-  const handleSignup = () => {
-    console.log('Signup:', signupData);
-    setShowSignupModal(false);
+  const handleSignup = async () => {
+    try {
+      await apiRequest("/auth/register", {
+        method: "POST",
+        body: JSON.stringify(signupData),
+      });
+
+      alert("Signup successful. Please login.");
+      setShowSignupModal(false);
+    } catch (err) {
+      alert(err.message);
+    }
   };
+
+  const handleLogout = async () => {
+    try {
+      await apiRequest("/auth/logout", { method: "POST" });
+      setUser(null);
+    } catch (err) {
+      console.error("Logout failed", err);
+    }
+  };
+
 
   return (
     <div className="min-h-screen bg-[#F0F0F0] text-black font-sans">
@@ -62,19 +94,39 @@ function Landing() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
-            <button
-              onClick={() => setShowSignupModal(true)}
-              className="px-8 py-4 bg-black text-white text-lg font-semibold rounded-xl hover:bg-gray-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
-            >
-              Sign Up
-            </button>
-            <button
-              onClick={() => setShowLoginModal(true)}
-              className="px-8 py-4 border-2 border-black text-black text-lg font-semibold rounded-xl hover:bg-black hover:text-white transition-all duration-300"
-            >
-              Login
-            </button>
+            {user ? (
+              <>
+                <button
+                  onClick={() => navigate(user.role === 'admin' ? '/admin' : '/user')}
+                  className="px-8 py-4 bg-black text-white text-lg font-semibold rounded-xl hover:bg-gray-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                >
+                  Go to {user.role === 'admin' ? 'Admin' : 'User'} Dashboard
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="px-8 py-4 border-2 border-black text-black text-lg font-semibold rounded-xl hover:bg-black hover:text-white transition-all duration-300"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => setShowSignupModal(true)}
+                  className="px-8 py-4 bg-black text-white text-lg font-semibold rounded-xl hover:bg-gray-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                >
+                  Sign Up
+                </button>
+                <button
+                  onClick={() => setShowLoginModal(true)}
+                  className="px-8 py-4 border-2 border-black text-black text-lg font-semibold rounded-xl hover:bg-black hover:text-white transition-all duration-300"
+                >
+                  Login
+                </button>
+              </>
+            )}
           </div>
+
         </div>
       </section>
 
@@ -161,7 +213,7 @@ function Landing() {
       {/* LOGIN MODAL */}
       {showLoginModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 relative animate-[scale-in_0.2s_ease-out]">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 relative animate-[scale-in_0.2s_ease-out]">
             <button
               onClick={() => setShowLoginModal(false)}
               className="absolute top-4 right-4 text-2xl hover:text-gray-600 transition-colors"
@@ -169,41 +221,73 @@ function Landing() {
               ✕
             </button>
 
-            <div className="text-center mb-8">
-              <div className="w-16 h-16 bg-black rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <span className="text-3xl">🔐</span>
+            <div className="text-center mb-4">
+              <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center mx-auto mb-3">
+                <span className="text-2xl">🔐</span>
               </div>
-              <h2 className="text-3xl font-bold mb-2">Welcome Back</h2>
-              <p className="text-gray-600">Login to your account</p>
+              <h2 className="text-2xl font-bold mb-1">Welcome Back</h2>
+              <p className="text-gray-600 text-sm">Login to your account</p>
             </div>
 
-            <div className="space-y-5">
+            <div className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold mb-2">Email</label>
+                <label className="block text-xs font-semibold mb-1">Email</label>
                 <input
                   type="email"
                   value={loginData.email}
                   onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-black focus:outline-none transition-colors"
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-black focus:outline-none transition-colors text-sm"
                   placeholder="your@email.com"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold mb-2">Password</label>
+                <label className="block text-xs font-semibold mb-1">Password</label>
                 <input
                   type="password"
                   value={loginData.password}
                   onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-black focus:outline-none transition-colors"
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-black focus:outline-none transition-colors text-sm"
                   placeholder="••••••••"
                 />
               </div>
 
-              <p className="text-xs text-gray-500 text-center mt-4">
-                User role is validated against the database using an <p className="text-black text-xl font-bold">indexed email lookup</p>
-                Role information is fetched server-side.
+              <p className="text-[10px] text-gray-400 text-center">
+                User role validated via <span className="text-black font-semibold">indexed email lookup</span>.
               </p>
+
+              {/* Dummy Login Grid */}
+              <div className="grid grid-cols-2 gap-3">
+                {/* Admin Dummy */}
+                <div className="bg-gray-100 p-3 rounded-lg border border-gray-200">
+                  <h3 className="text-xs font-bold text-gray-700 mb-1">Admin Demo</h3>
+                  <div className="text-[10px] text-gray-500 space-y-0.5 mb-2 break-all">
+                    <p>admin@example.com</p>
+                    <p>pass: string</p>
+                  </div>
+                  <button
+                    onClick={() => setLoginData({ email: "admin@example.com", password: "string" })}
+                    className="w-full text-[10px] bg-black text-white py-1.5 rounded hover:bg-gray-800 transition-colors"
+                  >
+                    Fill Admin
+                  </button>
+                </div>
+
+                {/* User Dummy */}
+                <div className="bg-gray-100 p-3 rounded-lg border border-gray-200">
+                  <h3 className="text-xs font-bold text-gray-700 mb-1">User Demo</h3>
+                  <div className="text-[10px] text-gray-500 space-y-0.5 mb-2 break-all">
+                    <p>user@example.com</p>
+                    <p>pass: string</p>
+                  </div>
+                  <button
+                    onClick={() => setLoginData({ email: "user@example.com", password: "string" })}
+                    className="w-full text-[10px] bg-black text-white py-1.5 rounded hover:bg-gray-800 transition-colors"
+                  >
+                    Fill User
+                  </button>
+                </div>
+              </div>
 
 
               {/* <div>
@@ -294,6 +378,9 @@ function Landing() {
                   <option value="user">👤 User</option>
                   <option value="admin">🛠️ Admin</option>
                 </select>
+                <p className="text-xs text-gray-500 mt-2">
+                  💡 Tip: Create an <strong>Admin</strong> account to test admin features, or check the <a href="http://localhost:8000/docs" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Backend Swagger UI</a>.
+                </p>
               </div>
 
               <button

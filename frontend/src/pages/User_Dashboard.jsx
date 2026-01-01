@@ -22,7 +22,7 @@ function UserDashboard() {
 
         setCurrentUser(user)
 
-        const tasksData = await apiRequest("/tasks")
+        const tasksData = await apiRequest("/tasks/")
         setTasks(tasksData)
 
       } catch (error) {

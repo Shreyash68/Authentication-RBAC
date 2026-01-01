@@ -1,9 +1,10 @@
 from pydantic import BaseModel, EmailStr
+from typing import Literal
 
 class RegisterSchema(BaseModel):
     email: EmailStr
     password: str
-    role: str  # admin | user
+    role: Literal["admin", "user"]  
 
 class LoginSchema(BaseModel):
     email: EmailStr
