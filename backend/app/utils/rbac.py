@@ -1,5 +1,5 @@
 from fastapi import Depends, HTTPException ,status
-from app.core.dependencies import get_current_user
+from core.dependencies import get_current_user
 
 async def require_admin(current_user = Depends(get_current_user)):
     if current_user["role"] != "admin":

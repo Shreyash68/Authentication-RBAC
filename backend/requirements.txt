@@ -3,4 +3,4 @@ uvicorn[standard]
 motor
 python-jose
 argon2-cffi
-pydantic
+pydantic[email]
