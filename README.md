@@ -49,7 +49,8 @@ The easiest way to run the application is using Docker.
     ```
 3.  **Access the App**:
     - Frontend: [http://localhost](http://localhost)
-    - Backend Docs: [http://localhost:8000/docs](http://localhost:8000/docs)
+    - Backend Docs: [http://localhost/api/docs](http://localhost/api/docs)
+    - Deployed Backend Docs: [http:ip-address/api/docs](http:ip-address/api/docs)
 
 ---
 

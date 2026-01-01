@@ -254,6 +254,8 @@ function Landing() {
 
               <p className="text-[10px] text-gray-400 text-center">
                 User role validated via <span className="text-black font-semibold">indexed email lookup</span>.
+                <br />
+                <a href="/api/docs" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View API Documentation (Swagger UI)</a>
               </p>
 
               {/* Dummy Login Grid */}
@@ -379,7 +381,7 @@ function Landing() {
                   <option value="admin">🛠️ Admin</option>
                 </select>
                 <p className="text-xs text-gray-500 mt-2">
-                  💡 Tip: Create an <strong>Admin</strong> account to test admin features, or check the <a href="http://localhost:8000/docs" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Backend Swagger UI</a>.
+                  💡 Tip: Create an <strong>Admin</strong> account to test admin features, or check the <a href="/api/docs" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Backend Swagger UI</a>.
                 </p>
               </div>
 
