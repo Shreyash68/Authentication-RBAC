@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from api.v1.router import router as v1_router
 
-app = FastAPI(title="TaskFlow API", version="1.0.0")
+app = FastAPI(title="TaskFlow API", version="1.0.0",root_path="/api")
 
 app.add_middleware(
     CORSMiddleware,
