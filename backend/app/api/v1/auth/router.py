@@ -26,7 +26,7 @@ async def register(data: RegisterSchema):
 @router.post("/login")
 async def login(data: LoginSchema, response: Response):
     user = await db.users.find_one({"email": data.email})
-    print(db)
+    
     if not user:
         raise HTTPException(status_code=401, detail="User not found With this email")
     if not verify_password(data.password, user["password"]):
@@ -48,7 +48,7 @@ async def login(data: LoginSchema, response: Response):
 
 @router.get("/me", response_model=UserMeResponse)
 async def me(current_user = Depends(get_current_user)):
-    print(type(current_user))
+   
 
     return {
         "id": str(current_user["_id"]),
